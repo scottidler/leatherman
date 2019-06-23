@@ -17,7 +17,7 @@ class MatchType(Enum):
 
 
 class InvalidFuzzyTypeError(Exception):
-    def __init__(obj):
+    def __init__(self, obj):
         message = f"type(obj)={type(obj)} is not dict or list"
         super(InvalidFuzzyTypeError, self).__init__(message)
 
@@ -56,11 +56,42 @@ def match_items(items, patterns, match_types, include=True):
             return results
     return []
 
+class FuzzyTuple(tuple):
+    def __new__(cls, *args, **kwargs):
+        return super().__new__(cls, tuple(args))
+
+    def __init__(self, *args, **kwargs):
+        self._match_types = kwargs.pop("match_types", DEFAULT_MATCH_TYPES)
+
+    def include(self, *patterns, match_types=None):
+        items = match_items(
+            [item for item in self.__iter__()],
+            patterns,
+            match_types or self._match_types,
+            include=True,
+        )
+        return FuzzyTuple(items)
+
+    def exclude(self, *patterns, match_types=None):
+        items = match_items(
+            [item for item in self.__iter__()],
+            patterns,
+            match_types or self._match_types,
+            include=False,
+        )
+        return FuzzyTuple(items)
+
+    def to_tuple(self):
+        return tuple(item for item in self.__iter__())
+
+    def __repr__(self):
+        return repr(tuple(self))
+
 
 class FuzzyList(list):
     def __init__(self, *args, **kwargs):
         self._match_types = kwargs.pop("match_types", DEFAULT_MATCH_TYPES)
-        super(FuzzyList, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
 
     def include(self, *patterns, match_types=None):
         items = match_items(
@@ -87,7 +118,7 @@ class FuzzyList(list):
 class FuzzyDict(dict):
     def __init__(self, *args, **kwargs):
         self._match_types = kwargs.pop("match_types", DEFAULT_MATCH_TYPES)
-        super(FuzzyDict, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
 
     def include(self, *patterns, match_types=None):
         items = match_items(
@@ -106,10 +137,12 @@ class FuzzyDict(dict):
 
 
 def fuzzy(obj):
-    if isinstance(obj, dict):
-        return FuzzyDict(obj)
+    if isinstance(obj, tuple):
+        return FuzzyTuple(obj)
     elif isinstance(obj, list):
         return FuzzyList(obj)
+    elif isinstance(obj, dict):
+        return FuzzyDict(obj)
     raise InvalidFuzzyTypeError(obj)
 
 
