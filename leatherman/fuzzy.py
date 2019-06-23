@@ -58,7 +58,7 @@ def match_items(items, patterns, match_types, include=True):
 
 class FuzzyTuple(tuple):
     def __new__(cls, *args, **kwargs):
-        return super().__new__(cls, tuple(args))
+        return super().__new__(cls, tuple(*args))
 
     def __init__(self, *args, **kwargs):
         self._match_types = kwargs.pop("match_types", DEFAULT_MATCH_TYPES)
