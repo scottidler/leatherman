@@ -81,7 +81,7 @@ class FuzzyTuple(tuple):
         )
         return FuzzyTuple(items)
 
-    def to_tuple(self):
+    def defuzz(self):
         return tuple(item for item in self.__iter__())
 
     def __repr__(self):
@@ -111,7 +111,7 @@ class FuzzyList(list):
         )
         return FuzzyList(items)
 
-    def to_list(self):
+    def defuzz(self):
         return [item for item in self.__iter__()]
 
 
@@ -132,7 +132,7 @@ class FuzzyDict(dict):
         )
         return FuzzyDict({item: self.get(item) for item in items})
 
-    def to_dict(self):
+    def defuzz(self):
         return dict(self.items())
 
 
