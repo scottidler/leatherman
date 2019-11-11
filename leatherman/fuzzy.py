@@ -4,6 +4,7 @@
 import re
 from enum import Enum
 from fnmatch import fnmatch
+from collections import OrderedDict
 
 
 class MatchType(Enum):
@@ -58,6 +59,7 @@ def match_items(items, patterns, match_types, include=True):
 
 class FuzzyTuple(tuple):
     def __new__(cls, *args, **kwargs):
+        self._type = type(args[0])
         return super().__new__(cls, tuple(*args))
 
     def __init__(self, *args, **kwargs):
@@ -90,6 +92,7 @@ class FuzzyTuple(tuple):
 
 class FuzzyList(list):
     def __init__(self, *args, **kwargs):
+        self._type = type(args[0])
         self._match_types = kwargs.pop("match_types", DEFAULT_MATCH_TYPES)
         super().__init__(*args, **kwargs)
 
@@ -115,8 +118,9 @@ class FuzzyList(list):
         return [item for item in self.__iter__()]
 
 
-class FuzzyDict(dict):
+class FuzzyDict(OrderedDict):
     def __init__(self, *args, **kwargs):
+        self._type = type(args[0])
         self._match_types = kwargs.pop("match_types", DEFAULT_MATCH_TYPES)
         super().__init__(*args, **kwargs)
 
@@ -133,7 +137,11 @@ class FuzzyDict(dict):
         return FuzzyDict({item: self.get(item) for item in items})
 
     def defuzz(self):
-        return dict(self.items())
+        if self._type == 'dict':
+            return dict(self.items())
+        elif self._type == 'collections.OrderedDict':
+            return OrderedDict(self.items())
+        raise Exception(f"unknown type: {self._type}")
 
 
 def fuzzy(obj):
