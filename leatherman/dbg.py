@@ -12,6 +12,11 @@ from .isinstance import *
 __all__ = ["dbg"]
 
 
+class FmtKeyError(Exception):
+    def __init__(self, keys):
+        msg = 'fmt error; key not found in keys: ' + ' '.join(keys)
+        super(FmtKeyError, self).__init__(msg)
+
 def dbg(*args, **kwargs):
     logger = kwargs.pop("logger", None)
     frame = inspect.currentframe().f_back
