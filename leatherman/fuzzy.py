@@ -121,6 +121,7 @@ class FuzzyList(list):
 class FuzzyDict(OrderedDict):
     def __init__(self, *args, **kwargs):
         self._type = type(args[0])
+        self._match_types = kwargs.pop("match_types", DEFAULT_MATCH_TYPES)
         super().__init__(*args, **kwargs)
 
     def include(self, *patterns, match_types=None):
