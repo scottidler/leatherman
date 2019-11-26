@@ -121,7 +121,6 @@ class FuzzyList(list):
 class FuzzyDict(OrderedDict):
     def __init__(self, *args, **kwargs):
         self._type = type(args[0])
-        self._match_types = kwargs.pop("match_types", DEFAULT_MATCH_TYPES)
         super().__init__(*args, **kwargs)
 
     def include(self, *patterns, match_types=None):
@@ -137,9 +136,9 @@ class FuzzyDict(OrderedDict):
         return FuzzyDict({item: self.get(item) for item in items})
 
     def defuzz(self):
-        if self._type == 'dict':
+        if self._type.__name__ == 'dict':
             return dict(self.items())
-        elif self._type == 'collections.OrderedDict':
+        elif self._type.__name__ == 'collections.OrderedDict':
             return OrderedDict(self.items())
         raise Exception(f"unknown type: {self._type}")
 
