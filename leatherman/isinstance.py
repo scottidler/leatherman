@@ -5,7 +5,6 @@
 collection of isinstance funcs
 """
 
-from collections import Iterable
 from types import ModuleType, FunctionType, GeneratorType
 
 
@@ -76,7 +75,7 @@ def isiterable(obj):
     """
     isiterable
     """
-    return isinstance(obj, Iterable)
+    return hasattr(obj, '__iter__')
 
 
 def isdict(obj):
