@@ -4,7 +4,6 @@
 """
 output
 """
-
 from ruamel import yaml
 
 
@@ -31,6 +30,7 @@ yaml.add_representer(list, list_presenter)
 
 def yaml_format(obj):
     class MyDumper(yaml.Dumper):
+        MAX_SIMPLE_KEY_LENGTH = 256
         def represent_mapping(self, tag, mapping, flow_style=False):
             return yaml.Dumper.represent_mapping(self, tag, mapping, flow_style)
 
