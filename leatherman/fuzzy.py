@@ -82,6 +82,7 @@ def item_func(item):
     return {
         'str': match_string,
         'list': match_list,
+        'tuple': match_list,
         'dict': match_dict,
     }[item.__class__.__name__]
 
