@@ -40,22 +40,63 @@ DEFAULT_MATCH_TYPES = [
     MatchType.CONTAINS,
 ]
 
-
-def match_item(item, patterns, match_type, include):
-    match_func = MATCH_FUNCS[match_type]
+def match_list(item_list, patterns, match_func, include):
     if include:
-        return any([match_func(item, pattern) for pattern in patterns])
-    return all([not match_func(item, pattern) for pattern in patterns])
+        return any([
+            any([
+                item_func(item)(item, patterns, match_func, include)
+                for item
+                in item_list
+            ])
+            for pattern
+            in patterns
+        ])
+        return result
+    return all([
+        any([
+            item_func(item)(item, patterns, match_func, include)
+            for item
+            in item_list
+        ])
+        for pattern
+        in patterns
+    ])
 
+def match_string(item_string, patterns, match_func, include):
+    if include:
+        return any([
+            match_func(item_string, pattern)
+            for pattern
+            in patterns
+        ])
+    return all([
+        not match_func(item_string, pattern)
+        for pattern
+        in patterns
+    ])
+
+def match_dict(item_dict, patterns, match_func, include):
+    raise NotImplementedError
+
+def item_func(item):
+    return {
+        'str': match_string,
+        'list': match_list,
+        'dict': match_dict,
+    }[item.__class__.__name__]
 
 def match_items(items, patterns, match_types, include=True):
     for match_type in match_types:
         results = [
-            item for item in items if match_item(item, patterns, match_type, include)
+            item
+            for item
+            in items
+            if item_func(item)(item, patterns, MATCH_FUNCS[match_type], include)
         ]
         if results:
             return results
     return []
+
 
 class FuzzyTuple(tuple):
     def __new__(cls, *args, **kwargs):
