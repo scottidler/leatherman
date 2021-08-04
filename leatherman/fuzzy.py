@@ -40,11 +40,11 @@ DEFAULT_MATCH_TYPES = [
     MatchType.CONTAINS,
 ]
 
-def match_list(item_list, patterns, match_func, include):
+def match_list(item_list, patterns, match_func, key_func, include):
     if include:
         return any([
             any([
-                item_func(item)(item, patterns, match_func, include)
+                item_func(item)(item, patterns, match_func, key_func, include)
                 for item
                 in item_list
             ])
@@ -54,7 +54,7 @@ def match_list(item_list, patterns, match_func, include):
         return result
     return all([
         any([
-            item_func(item)(item, patterns, match_func, include)
+            item_func(item)(item, patterns, match_func, key_func, include)
             for item
             in item_list
         ])
@@ -62,7 +62,8 @@ def match_list(item_list, patterns, match_func, include):
         in patterns
     ])
 
-def match_string(item_string, patterns, match_func, include):
+def match_item(item, patterns, match_func, key_func, include):
+    item_string = key_func(item)
     if include:
         return any([
             match_func(item_string, pattern)
@@ -80,19 +81,18 @@ def match_dict(item_dict, patterns, match_func, include):
 
 def item_func(item):
     return {
-        'str': match_string,
         'list': match_list,
         'tuple': match_list,
         'dict': match_dict,
-    }[item.__class__.__name__]
+    }.get(item.__class__.__name__, match_item)
 
-def match_items(items, patterns, match_types, include=True):
+def match_items(items, patterns, match_types, key_func=str, include=True):
     for match_type in match_types:
         results = [
             item
             for item
             in items
-            if item_func(item)(item, patterns, MATCH_FUNCS[match_type], include)
+            if item_func(item)(item, patterns, MATCH_FUNCS[match_type], key_func, include)
         ]
         if results:
             return results
@@ -100,8 +100,9 @@ def match_items(items, patterns, match_types, include=True):
 
 
 class FuzzyTuple(tuple):
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args, key_func=str, **kwargs):
         self._type = type(args[0])
+        self._key_func = key_func
         self._match_types = kwargs.pop("match_types", DEFAULT_MATCH_TYPES)
 
     def include(self, *patterns, match_types=None):
@@ -109,6 +110,7 @@ class FuzzyTuple(tuple):
             [item for item in self.__iter__()],
             patterns,
             match_types or self._match_types,
+            key_func=self._key_func,
             include=True,
         )
         return FuzzyTuple(items)
@@ -118,6 +120,7 @@ class FuzzyTuple(tuple):
             [item for item in self.__iter__()],
             patterns,
             match_types or self._match_types,
+            key_func=self._key_func,
             include=False,
         )
         return FuzzyTuple(items)
@@ -130,8 +133,9 @@ class FuzzyTuple(tuple):
 
 
 class FuzzyList(list):
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args, key_func=str, **kwargs):
         self._type = type(args[0])
+        self._key_func = key_func
         self._match_types = kwargs.pop("match_types", DEFAULT_MATCH_TYPES)
         super().__init__(*args, **kwargs)
 
@@ -140,6 +144,7 @@ class FuzzyList(list):
             [item for item in self.__iter__()],
             patterns,
             match_types or self._match_types,
+            key_func=self._key_func,
             include=True,
         )
         return FuzzyList(items)
@@ -149,6 +154,7 @@ class FuzzyList(list):
             [item for item in self.__iter__()],
             patterns,
             match_types or self._match_types,
+            key_func=self._key_func,
             include=False,
         )
         return FuzzyList(items)
@@ -158,20 +164,21 @@ class FuzzyList(list):
 
 
 class FuzzyDict(OrderedDict):
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args, key_func=str, **kwargs):
         self._type = type(args[0])
+        self._key_func = key_func
         self._match_types = kwargs.pop("match_types", DEFAULT_MATCH_TYPES)
         super().__init__(*args, **kwargs)
 
     def include(self, *patterns, match_types=None):
         items = match_items(
-            self.keys(), patterns, match_types or self._match_types, include=True
+            self.keys(), patterns, match_types or self._match_types, key_func=self._key_func, include=True
         )
         return FuzzyDict({item: self.get(item) for item in items})
 
     def exclude(self, *patterns, match_types=None):
         items = match_items(
-            self.keys(), patterns, match_types or self._match_types, include=False
+            self.keys(), patterns, match_types or self._match_types, key_func=self._key_func, include=False
         )
         return FuzzyDict({item: self.get(item) for item in items})
 
@@ -183,13 +190,13 @@ class FuzzyDict(OrderedDict):
         raise Exception(f"unknown type: {self._type}")
 
 
-def fuzzy(obj):
+def fuzzy(obj, key_func=str):
     if isinstance(obj, tuple):
-        return FuzzyTuple(obj)
+        return FuzzyTuple(obj, key_func=key_func)
     elif isinstance(obj, list):
-        return FuzzyList(obj)
+        return FuzzyList(obj, key_func=key_func)
     elif isinstance(obj, dict):
-        return FuzzyDict(obj)
+        return FuzzyDict(obj, key_func=key_func)
     raise InvalidFuzzyTypeError(obj)
 
 
