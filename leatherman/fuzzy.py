@@ -100,10 +100,10 @@ def match_items(items, patterns, match_types, key_func=str, include=True):
 
 
 class FuzzyTuple(tuple):
-    def __init__(self, *args, key_func=str, **kwargs):
+    def __init__(self, *args, key_func=str, match_types, **kwargs):
         self._type = type(args[0])
         self._key_func = key_func
-        self._match_types = kwargs.pop("match_types", DEFAULT_MATCH_TYPES)
+        self._match_types = match_types or DEFAULT_MATCH_TYPES
 
     def include(self, *patterns, match_types=None):
         items = match_items(
@@ -133,10 +133,10 @@ class FuzzyTuple(tuple):
 
 
 class FuzzyList(list):
-    def __init__(self, *args, key_func=str, **kwargs):
+    def __init__(self, *args, key_func=str, match_types=None, **kwargs):
         self._type = type(args[0])
         self._key_func = key_func
-        self._match_types = kwargs.pop("match_types", DEFAULT_MATCH_TYPES)
+        self._match_types = match_types or DEFAULT_MATCH_TYPES
         super().__init__(*args, **kwargs)
 
     def include(self, *patterns, match_types=None):
@@ -164,10 +164,10 @@ class FuzzyList(list):
 
 
 class FuzzyDict(OrderedDict):
-    def __init__(self, *args, key_func=str, **kwargs):
+    def __init__(self, *args, key_func=str, match_types=None, **kwargs):
         self._type = type(args[0])
         self._key_func = key_func
-        self._match_types = kwargs.pop("match_types", DEFAULT_MATCH_TYPES)
+        self._match_types = match_types or DEFAULT_MATCH_TYPES
         super().__init__(*args, **kwargs)
 
     def include(self, *patterns, match_types=None):
@@ -190,13 +190,13 @@ class FuzzyDict(OrderedDict):
         raise Exception(f"unknown type: {self._type}")
 
 
-def fuzzy(obj, key_func=str):
+def fuzzy(obj, key_func=str, match_types=None):
     if isinstance(obj, tuple):
-        return FuzzyTuple(obj, key_func=key_func)
+        return FuzzyTuple(obj, key_func=key_func, match_types=match_types)
     elif isinstance(obj, list):
-        return FuzzyList(obj, key_func=key_func)
+        return FuzzyList(obj, key_func=key_func, match_types=match_types)
     elif isinstance(obj, dict):
-        return FuzzyDict(obj, key_func=key_func)
+        return FuzzyDict(obj, key_func=key_func, match_types=match_types)
     raise InvalidFuzzyTypeError(obj)
 
 
