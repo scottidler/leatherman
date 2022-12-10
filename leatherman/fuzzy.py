@@ -26,8 +26,8 @@ class InvalidFuzzyTypeError(Exception):
 MATCH_FUNCS = {
     MatchType.EXACT: lambda item, pattern: pattern == item,
     MatchType.IGNORECASE: lambda item, pattern: pattern.lower() == item.lower(),
-    MatchType.PREFIX: lambda item, pattern: fnmatch(item, pattern + "*"),
-    MatchType.SUFFIX: lambda item, pattern: fnmatch(item, "*" + pattern),
+    MatchType.PREFIX: lambda item, pattern: item.startswith(pattern),
+    MatchType.SUFFIX: lambda item, pattern: item.endswith(pattern),
     MatchType.CONTAINS: lambda item, pattern: pattern in item,
     MatchType.GLOB: lambda item, pattern: fnmatch(item, pattern),
     MatchType.REGEX: lambda item, pattern: re.search(item, pattern),
