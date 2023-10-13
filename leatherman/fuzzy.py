@@ -30,7 +30,7 @@ MATCH_FUNCS = {
     MatchType.SUFFIX: lambda item, pattern: item.endswith(pattern),
     MatchType.CONTAINS: lambda item, pattern: pattern in item,
     MatchType.GLOB: lambda item, pattern: fnmatch(item, pattern),
-    MatchType.REGEX: lambda item, pattern: re.search(item, pattern),
+    MatchType.REGEX: lambda item, pattern: re.search(pattern, item),
 }
 
 DEFAULT_MATCH_TYPES = [
@@ -39,6 +39,7 @@ DEFAULT_MATCH_TYPES = [
     MatchType.PREFIX,
     MatchType.CONTAINS,
 ]
+
 
 def match_list(item_list, patterns, match_func, key_func, include):
     if include:
@@ -51,7 +52,6 @@ def match_list(item_list, patterns, match_func, key_func, include):
             for pattern
             in patterns
         ])
-        return result
     return all([
         any([
             item_func(item)(item, patterns, match_func, key_func, include)
@@ -61,6 +61,7 @@ def match_list(item_list, patterns, match_func, key_func, include):
         for pattern
         in patterns
     ])
+
 
 def match_item(item, patterns, match_func, key_func, include):
     item_string = key_func(item)
@@ -76,8 +77,10 @@ def match_item(item, patterns, match_func, key_func, include):
         in patterns
     ])
 
+
 def match_dict(item_dict, patterns, match_func, include):
-    raise NotImplementedError
+    raise NotImplementedError("This function is not yet implemented.")
+
 
 def item_func(item):
     return {
@@ -86,8 +89,11 @@ def item_func(item):
         'dict': match_dict,
     }.get(item.__class__.__name__, match_item)
 
+
 def match_items(items, patterns, match_types, key_func=str, include=True):
     for match_type in match_types:
+        if match_type not in MATCH_FUNCS:
+            raise ValueError(f"Invalid match type: {match_type}")
         results = [
             item
             for item
@@ -100,10 +106,11 @@ def match_items(items, patterns, match_types, key_func=str, include=True):
 
 
 class FuzzyTuple(tuple):
-    def __init__(self, *args, key_func=str, match_types, **kwargs):
+    def __init__(self, *args, key_func=str, match_types=None, **kwargs):
         self._type = type(args[0])
         self._key_func = key_func
         self._match_types = match_types or DEFAULT_MATCH_TYPES
+
 
     def include(self, *patterns, match_types=None):
         items = match_items(
@@ -113,7 +120,8 @@ class FuzzyTuple(tuple):
             key_func=self._key_func,
             include=True,
         )
-        return FuzzyTuple(items)
+        return FuzzyTuple(items, key_func=self._key_func, match_types=match_types or self._match_types)
+
 
     def exclude(self, *patterns, match_types=None):
         items = match_items(
@@ -123,10 +131,12 @@ class FuzzyTuple(tuple):
             key_func=self._key_func,
             include=False,
         )
-        return FuzzyTuple(items)
+        return FuzzyTuple(items, key_func=self._key_func, match_types=match_types or self._match_types)
+
 
     def defuzz(self):
         return tuple(item for item in self.__iter__())
+
 
     def __repr__(self):
         return repr(tuple(self))
@@ -139,6 +149,7 @@ class FuzzyList(list):
         self._match_types = match_types or DEFAULT_MATCH_TYPES
         super().__init__(*args, **kwargs)
 
+
     def include(self, *patterns, match_types=None):
         items = match_items(
             [item for item in self.__iter__()],
@@ -147,7 +158,8 @@ class FuzzyList(list):
             key_func=self._key_func,
             include=True,
         )
-        return FuzzyList(items)
+        return FuzzyList(items, key_func=self._key_func, match_types=match_types or self._match_types)
+
 
     def exclude(self, *patterns, match_types=None):
         items = match_items(
@@ -157,7 +169,8 @@ class FuzzyList(list):
             key_func=self._key_func,
             include=False,
         )
-        return FuzzyList(items)
+        return FuzzyList(items, key_func=self._key_func, match_types=match_types or self._match_types)
+
 
     def defuzz(self):
         return [item for item in self.__iter__()]
@@ -168,19 +181,25 @@ class FuzzyDict(OrderedDict):
         self._type = type(args[0])
         self._key_func = key_func
         self._match_types = match_types or DEFAULT_MATCH_TYPES
+        for key in args[0].keys():
+            if not isinstance(key, str):
+                raise TypeError(f"All keys must be strings. Found key of type {type(key).__name__}")
         super().__init__(*args, **kwargs)
+
 
     def include(self, *patterns, match_types=None):
         items = match_items(
             self.keys(), patterns, match_types or self._match_types, key_func=self._key_func, include=True
         )
-        return FuzzyDict({item: self.get(item) for item in items})
+        return FuzzyDict({item: self.get(item) for item in items}, key_func=self._key_func, match_types=match_types or self._match_types)
+
 
     def exclude(self, *patterns, match_types=None):
         items = match_items(
             self.keys(), patterns, match_types or self._match_types, key_func=self._key_func, include=False
         )
-        return FuzzyDict({item: self.get(item) for item in items})
+        return FuzzyDict({item: self.get(item) for item in items}, key_func=self._key_func, match_types=match_types or self._match_types)
+
 
     def defuzz(self):
         if self._type.__name__ == 'dict':
@@ -202,4 +221,4 @@ def fuzzy(obj, key_func=str, match_types=None):
 
 if __name__ == "__main__":
     f = fuzzy(["a", "b"])
-    print(f"f={f.items}")
+    print(f"f={f}")
