@@ -5,6 +5,44 @@ import pytest
 from leatherman.fuzzy import *
 
 
+class Thing:
+    def __init__(self, name):
+        self.name = name
+
+
+def thing_name(thing):
+    return thing.name
+
+
+def test_fuzzy_list_with_default_match_types_and_wildcard():
+    repos = [Thing('apple'), Thing('banana'), Thing('cherry')]
+    f = fuzzy(repos, key_func=thing_name)
+    result = f.include("*")  # Using default match_types and wildcard pattern
+    assert result.defuzz() == repos  # Should return the same list as provided
+
+
+def test_fuzzy_list_with_custom_key_func():
+    repos = [Thing('apple'), Thing('banana'), Thing('cherry')]
+    f = fuzzy(repos, key_func=thing_name)
+    result = f.include("apple", match_types=[MatchType.EXACT])
+    assert result.defuzz() == [repos[0]]
+
+
+def test_fuzzy_tuple_with_custom_key_func():
+    repos = (Thing('apple'), Thing('banana'), Thing('cherry'))
+    f = fuzzy(repos, key_func=thing_name)
+    result = f.include("apple", match_types=[MatchType.EXACT])
+    assert result.defuzz() == (repos[0],)
+
+
+@pytest.mark.skip(reason='disabling this test for now, until dict case is fully implemented')
+def test_fuzzy_dict_with_custom_key_func():
+    repos = {'a': Thing('apple'), 'b': Thing('banana'), 'c': Thing('cherry')}
+    f = fuzzy(repos, key_func=thing_name)
+    result = f.include("apple", match_types=[MatchType.EXACT])
+    assert result.defuzz() == {'a': repos['a']}
+
+
 def test_match_type_enum():
     print("Testing MatchType Enum...")
     assert MatchType.EXACT.value == 0
@@ -59,6 +97,15 @@ def test_invalid_fuzzy_type_error():
     with pytest.raises(InvalidFuzzyTypeError):
         fuzzy(42)
     print("InvalidFuzzyTypeError test passed.")
+
+
+def test_match_items_wildcard():
+    print("Testing match_items wildcard match...")
+    items = ["apple", "banana", "cherry"]
+    patterns = ["*"]
+    result = match_items(items, patterns, match_types=DEFAULT_MATCH_TYPES)
+    assert result == items
+    print("match_items wildcard match test passed.")
 
 
 def test_fuzzy_tuple_include_exact():

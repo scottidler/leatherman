@@ -91,6 +91,8 @@ def item_func(item):
 
 
 def match_items(items, patterns, match_types, key_func=str, include=True):
+    if '*' in patterns:
+        return items
     for match_type in match_types:
         if match_type not in MATCH_FUNCS:
             raise ValueError(f"Invalid match type: {match_type}")
